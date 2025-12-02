@@ -5,14 +5,11 @@ import { useNavigate } from "react-router-dom";
 const VerifyOTP = () => {
   const navigate = useNavigate();
 
-  const [userDetails, setUserDetails] = useState({
-    email: "",
-  });
+  const [userDetails, setUserDetails] = useState({ email: "" });
 
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
 
-  // ✅ Load user info from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("userInfo");
     if (saved) {
