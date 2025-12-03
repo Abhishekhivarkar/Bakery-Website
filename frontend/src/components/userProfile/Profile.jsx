@@ -35,7 +35,7 @@ export default function Profile() {
   const hasProfilePic = Boolean(user?.profilePicture);
 
   return (
-    <div className="font-display bg-[#f8f7f6] min-h-screen text-[#181411] px-4 py-10">
+    <div className="font-display bg-[#f8f7f6] min-h-screen text-[#181411] pt-30 px-4 py-10">
       <div className="mx-auto w-full max-w-7xl">
         <div className="flex flex-col gap-8 md:flex-row">
           {/* =========================================
@@ -79,7 +79,10 @@ export default function Profile() {
                   </button>
 
                   <button className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-orange-200/30">
-                    My Favorites
+                    Settings
+                  </button>
+                  <button className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-orange-200/30">
+                    Admin Login
                   </button>
                 </div>
               </div>
@@ -122,51 +125,7 @@ export default function Profile() {
 
               {/* PERSONAL INFO */}
               <h2 className="text-2xl font-bold mb-1">My Profile</h2>
-              <p className="text-gray-500 mb-6">
-                View and edit your personal information below.
-              </p>
-
-              <form className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <label className="flex flex-col">
-                  <span className="text-sm pb-1 font-medium">Full Name</span>
-                  <input
-                    className="border rounded-lg px-4 py-3"
-                    defaultValue={user?.name}
-                  />
-                </label>
-
-                <label className="flex flex-col">
-                  <span className="text-sm pb-1 font-medium">Email</span>
-                  <input
-                    className="border rounded-lg px-4 py-3"
-                    defaultValue={user?.email}
-                  />
-                </label>
-
-                <label className="flex flex-col">
-                  <span className="text-sm pb-1 font-medium">Phone</span>
-                  <input
-                    className="border rounded-lg px-4 py-3"
-                    defaultValue={user?.phone || "Not Added"}
-                  />
-                </label>
-
-                <label className="flex flex-col">
-                  <span className="text-sm pb-1 font-medium">
-                    Delivery Address
-                  </span>
-                  <input
-                    className="border rounded-lg px-4 py-3"
-                    defaultValue={
-                      user?.address
-                        ? `${user.address.street || ""}, ${
-                            user.address.city || ""
-                          }`
-                        : ""
-                    }
-                  />
-                </label>
-              </form>
+              <p className="text-gray-500 mb-6">{user?.name}</p>
 
               {/* SAVE BUTTON */}
               <div className="flex justify-end mt-4">
@@ -235,8 +194,14 @@ export default function Profile() {
                           "http://localhost:5000/api/auth/logout"
                         );
 
+                        // 🔑 Remove both
                         localStorage.removeItem("userToken");
+                        localStorage.removeItem("userInfo");
 
+                        // 🔔 Let Navbar know immediately (same tab)
+                        window.dispatchEvent(new Event("storage"));
+
+                        // Redirect
                         window.location.href = "/home";
                       } catch (error) {
                         console.error("Logout Error:", error);

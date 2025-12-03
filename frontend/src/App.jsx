@@ -107,14 +107,6 @@ export default function App() {
 
       {/* User profile */}
       <Route
-        path="/profile"
-        element={
-          <AuthLayout>
-            <Profile />
-          </AuthLayout>
-        }
-      />
-      <Route
         path="/update-profile"
         element={
           <AuthLayout>

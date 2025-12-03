@@ -15,33 +15,24 @@ router.post("/register-super-admin", async (req, res) => {
 
   try {
     console.log("📥 Request Body:", req.body);
-
     const { name, email, password } = req.body;
-
     console.log("🔍 Checking for existing super admin...");
-
     const checkSuper = await Admin.findOne({ role: "super-admin" });
-
     console.log("🟡 checkSuper result:", checkSuper);
-
     if (checkSuper) {
       console.log("❌ Super Admin already exists!");
       return res.status(403).json({
         message: "Super Admin already exists",
       });
     }
-
     console.log("🛠 Creating new super admin...");
-
     const admin = await Admin.create({
       name,
       email,
       password,
       role: "super-admin",
     });
-
     console.log("✅ Super Admin created:", admin);
-
     res.status(201).json({
       success: true,
       message: "Super Admin registered successfully",

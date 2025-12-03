@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
+import axios from "axios"; // ✅ ADD THIS
 import logo from "../assets/homePage/logo White.png";
 import { FaShoppingCart } from "react-icons/fa";
 
@@ -11,24 +12,67 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
 
-  // Load user from localStorage
-  const location = useLocation();
-
   useEffect(() => {
-    const stored = localStorage.getItem("userInfo");
-    if (stored) {
-      setUser(JSON.parse(stored));
-    } else {
-      setUser(null);
-    }
+    const syncUserFromStorageOrAPI = async () => {
+      try {
+        // 1️⃣ Try userInfo from localStorage
+        const stored = localStorage.getItem("userInfo");
 
-    const handleStorageChange = () => {
-      const updated = localStorage.getItem("userInfo");
-      if (updated) {
-        setUser(JSON.parse(updated));
-      } else {
+        if (stored) {
+          setUser(JSON.parse(stored));
+        } else {
+          // 2️⃣ If no userInfo, but token exists → fetch from backend
+          const token = localStorage.getItem("userToken");
+
+          if (!token) {
+            setUser(null);
+          } else {
+            const res = await axios.get("http://localhost:5000/api/auth/me", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            // Adjust based on your backend response structure
+            const u = res.data.user || res.data;
+
+            const cleanedUser = {
+              id: u.id || u._id,
+              username: u.username,
+              email: u.email,
+              profilePicture: u.profilePicture || "",
+            };
+
+            setUser(cleanedUser);
+            localStorage.setItem("userInfo", JSON.stringify(cleanedUser));
+          }
+        }
+
+        // 3️⃣ Optional: sync cart count from localStorage
+        const storedCart = localStorage.getItem("cartItems");
+        if (storedCart) {
+          try {
+            const items = JSON.parse(storedCart);
+            setCartCount(Array.isArray(items) ? items.length : 0);
+          } catch {
+            setCartCount(0);
+          }
+        } else {
+          setCartCount(0);
+        }
+      } catch (err) {
+        console.error("Failed to sync user:", err);
+        // If token is invalid, clean everything
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("userInfo");
         setUser(null);
       }
+    };
+
+    // Call once on mount
+    syncUserFromStorageOrAPI();
+
+    // 4️⃣ Listen for manual "storage" events (logout, login updates)
+    const handleStorageChange = () => {
+      syncUserFromStorageOrAPI();
     };
 
     window.addEventListener("storage", handleStorageChange);
@@ -36,7 +80,7 @@ const Navbar = () => {
     return () => {
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [location]);
+  }, []); // ✅ No need for [location]
 
   const menuItems = [
     {
