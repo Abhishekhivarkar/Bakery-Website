@@ -3,17 +3,26 @@ const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, index: true }, // optional SEO-friendly slug
+    slug: { type: String, index: true },
     description: { type: String },
-    price: { type: Number, required: true }, // store in paise/ cents or float
-    category: { type: String, index: true }, // denormalized category name e.g., 'cake'
-    images: [{ type: String }], // array of URLs/paths
+    price: { type: Number, required: true },
+
+    category: { type: String, index: true },
+
+    images: [{ type: String }],
+
     stock: { type: Number, default: 0 },
+
     isFeatured: { type: Boolean, default: false },
     tags: [{ type: String }],
     rating: { type: Number, default: 0 },
     reviewsCount: { type: Number, default: 0 },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // admin who created
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+
+    // ⭐ New Fields Added
+    weight: { type: String, default: "500g" },   // e.g., "500g", "1kg", "2kg"
+    flavour: { type: String, default: "Vanilla" } // e.g., Chocolate, Strawberry
   },
   { timestamps: true }
 );

@@ -13,8 +13,26 @@ import { FaXTwitter } from "react-icons/fa6";
 import logo from "../assets/homePage/logo White.png";
 
 const Footer = () => {
+  // Inline SVG pattern encoded as data URI
+  const svgPattern = `
+    data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E
+    %3Ccircle cx='40' cy='40' r='2' fill='%23a36d3c'/%3E
+    %3Ccircle cx='20' cy='20' r='1.5' fill='%23a36d3c'/%3E
+    %3Ccircle cx='60' cy='20' r='1.5' fill='%23a36d3c'/%3E
+    %3Ccircle cx='20' cy='60' r='1.5' fill='%23a36d3c'/%3E
+    %3Ccircle cx='60' cy='60' r='1.5' fill='%23a36d3c'/%3E
+    %3C/svg%3E`;
+
   return (
-    <footer className="bg-[#6f482a] pt-16 pb-10 shadow-[0_10px_40px_rgba(0,0,0,0.1)] relative overflow-hidden">
+    <footer
+      className="pt-16 pb-10 shadow-[0_10px_40px_rgba(0,0,0,0.1)] relative overflow-hidden"
+      style={{
+        backgroundColor: "#6f482a", // maintain original brown
+        backgroundImage: `url(${svgPattern})`,
+        backgroundRepeat: "repeat",
+        backgroundSize: "80px 80px", // subtle carving effect
+      }}
+    >
       <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Logo + About */}
         <div>
@@ -37,7 +55,6 @@ const Footer = () => {
             <p className="text-sm text-[#F9FBFB]">
               Email us: <br />
               <span className="font-semibold text-[#F9FBFB]">
-                {" "}
                 Official@graphura.in
               </span>
             </p>
@@ -54,7 +71,7 @@ const Footer = () => {
           </h3>
 
           <ul className="space-y-3 text-[#F9FBFB]">
-            {[
+            {[ 
               { path: "/home", label: "Home" },
               { path: "/about", label: "About Us" },
               { path: "/cakes", label: "Our Cakes" },
@@ -136,23 +153,11 @@ const Footer = () => {
           {/* Social */}
           <div className="flex gap-5 mt-6 text-xl text-[#F9FBFB]">
             {[
-              {
-                icon: FaLinkedin,
-                path: "https://www.linkedin.com/company/graphura-india-private-limited/posts/?feedView=all",
-              },
-              {
-                icon: FaInstagram,
-                path: "https://www.instagram.com/graphura.in?igsh=MXh0Zmt6eXB4NnpjNQ==",
-              },
-              {
-                icon: FaFacebook,
-                path: "https://www.facebook.com/Graphura.in",
-              },
+              { icon: FaLinkedin, path: "https://www.linkedin.com/company/graphura-india-private-limited/posts/?feedView=all" },
+              { icon: FaInstagram, path: "https://www.instagram.com/graphura.in?igsh=MXh0Zmt6eXB4NnpjNQ==" },
+              { icon: FaFacebook, path: "https://www.facebook.com/Graphura.in" },
               { icon: FaXTwitter, path: "https://x.com/Graphura" },
-              {
-                icon: FaMapMarkerAlt,
-                path: "https://maps.app.goo.gl/DoXYDapgZWJix4uE7",
-              },
+              { icon: FaMapMarkerAlt, path: "https://maps.app.goo.gl/DoXYDapgZWJix4uE7" },
             ].map((item, index) => {
               const Icon = item.icon;
               return (

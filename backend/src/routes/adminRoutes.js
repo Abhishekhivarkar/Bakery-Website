@@ -8,6 +8,7 @@ const adminAuth = require("../middlewares/adminMiddleware");
 const superAdminAuth = require("../middlewares/superAdminAuth"); // super admin access
 
 const router = express.Router();
+
 /* ============================================================
    FIRST SUPER ADMIN REGISTER (ONE-TIME ONLY)
 ============================================================ */
@@ -197,18 +198,53 @@ router.post(
 /* ============================================================
    ADMIN + SUPER ADMIN → Update Product
 ============================================================ */
-// GET single product
-// router.get("/product/:id", adminAuth, async (req, res) => {
-//   try {
-//     const product = await Product.findById(req.params.id);
-  
-//     if (!product) return res.status(404).json({ message: "Product not found" });
+router.put("/product/:id", adminAuth, async (req, res) => {
+  try {
+    const { name, description, price, category, stock, isFeatured, tags } = req.body;
 
-//     res.json({ success: true, product });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// });
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // Update product fields
+    if (name !== undefined) product.name = name;
+    if (description !== undefined) product.description = description;
+    if (price !== undefined) product.price = price;
+    if (category !== undefined) product.category = category;
+    if (stock !== undefined) product.stock = stock;
+    if (isFeatured !== undefined) product.isFeatured = isFeatured;
+    if (tags !== undefined) {
+      product.tags = typeof tags === 'string' 
+        ? tags.split(",").map((t) => t.trim()).filter(t => t)
+        : tags;
+    }
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: "Product updated successfully",
+      product,
+    });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* ============================================================
+   ADMIN + SUPER ADMIN → Get Single Product
+============================================================ */
+router.get("/product/:id", adminAuth, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+  
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 /* ============================================================
    ADMIN + SUPER ADMIN → Delete Product

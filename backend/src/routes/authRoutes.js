@@ -6,7 +6,6 @@ const path = require("path");
 const fs = require("fs");
 
 const User = require("../models/User");
-// const Note = require("../models/notes");
 const Otp = require("../models/otp");
 
 const { sendOTPEmail } = require("../utils/sendOTP");
@@ -49,9 +48,10 @@ router.post("/register", async (req, res) => {
     });
 
     if (existing)
-      return res
-        .status(400)
-        .json({ message: "Email or phone already registered" });
+      return res.status(400).json({
+        success: false,
+        message: "Email or phone already registered"
+      });
 
     const otp = generateOTP();
 
@@ -67,9 +67,16 @@ router.post("/register", async (req, res) => {
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
-    res.status(200).json({ message: "OTP sent successfully" });
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully"
+    });
   } catch (err) {
-    res.status(500).json({ message: "OTP failed", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "OTP failed",
+      error: err.message
+    });
   }
 });
 
@@ -91,9 +98,16 @@ router.post("/send-otp", async (req, res) => {
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
-    res.status(200).json({ message: "OTP sent successfully" });
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully"
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to send OTP", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+      error: err.message
+    });
   }
 });
 
@@ -104,7 +118,10 @@ router.post("/verify-otp", async (req, res) => {
   const { email, phone, otp, purpose } = req.body;
 
   if (!otp) {
-    return res.status(400).json({ message: "OTP required" });
+    return res.status(400).json({
+      success: false,
+      message: "OTP required"
+    });
   }
 
   // Build query
@@ -117,15 +134,24 @@ router.post("/verify-otp", async (req, res) => {
   const record = await Otp.findOne(query).sort({ createdAt: -1 });
 
   if (!record) {
-    return res.status(400).json({ message: "OTP not found" });
+    return res.status(400).json({
+      success: false,
+      message: "OTP not found"
+    });
   }
 
   if (String(record.code) !== String(otp)) {
-    return res.status(400).json({ message: "Invalid OTP" });
+    return res.status(400).json({
+      success: false,
+      message: "Invalid OTP"
+    });
   }
 
   if (record.expiresAt < Date.now()) {
-    return res.status(400).json({ message: "OTP expired" });
+    return res.status(400).json({
+      success: false,
+      message: "OTP expired"
+    });
   }
 
   return res.status(200).json({
@@ -136,26 +162,35 @@ router.post("/verify-otp", async (req, res) => {
 });
 
 /* ============================================================
-   SET USERNAME → CREATE USER
+   SET USERNAME → CREATE USER + RETURN TOKEN
 ============================================================ */
 router.post("/set-username", async (req, res, next) => {
   try {
     const { username, email, phone } = req.body;
 
     if (!username || (!email && !phone)) {
-      return res.status(400).json({ message: "Missing data" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing data"
+      });
     }
 
     // check username
     const exists = await User.findOne({ username });
-    if (exists) return res.status(400).json({ message: "Username taken" });
+    if (exists) return res.status(400).json({
+      success: false,
+      message: "Username taken"
+    });
 
     // find OTP record
     const query = email ? { email } : { phone };
     const otpRecord = await Otp.findOne(query).sort({ createdAt: -1 });
 
     if (!otpRecord)
-      return res.status(400).json({ message: "Registration expired" });
+      return res.status(400).json({
+        success: false,
+        message: "Registration expired"
+      });
 
     // hash the password properly
     const hashedPassword = await bcrypt.hash(otpRecord.password, 10);
@@ -170,16 +205,35 @@ router.post("/set-username", async (req, res, next) => {
       emailVerified: true,
     });
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     // delete OTP record
     await Otp.deleteOne({ _id: otpRecord._id });
 
     res.status(201).json({
+      success: true,
       message: "Registration complete",
-      user: { id: user._id, username: user.username, email: user.email },
+      token: token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        phone: user.phone
+      },
     });
   } catch (err) {
     console.error("SET USERNAME ERROR:", err);
-    res.status(500).json({ message: "Internal error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: err.message
+    });
   }
 });
 
@@ -191,21 +245,37 @@ router.post("/login", async (req, res) => {
 
   try {
     const user = await User.findOne({ email }).select("+password");
-    if (!user) return res.status(404).json("User not found");
+    if (!user) return res.status(404).json({
+      success: false,
+      message: "User not found"
+    });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json("Invalid credentials");
+    if (!isMatch) return res.status(400).json({
+      success: false,
+      message: "Invalid credentials"
+    });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
     res.status(200).json({
+      success: true,
       token,
-      user: { id: user._id, username: user.username, email: user.email },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        phone: user.phone
+      },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
@@ -219,7 +289,11 @@ router.get("/me", authMiddleware, async (req, res) => {
       user: req.user,
     });
   } catch (err) {
-    res.status(500).json({ message: "Error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Error",
+      error: err.message
+    });
   }
 });
 
@@ -228,7 +302,10 @@ router.get("/me", authMiddleware, async (req, res) => {
 // ============================================================
 router.post("/logout", (req, res) => {
   // Frontend will delete the token
-  return res.status(200).json({ message: "Logged out successfully" });
+  return res.status(200).json({
+    success: true,
+    message: "Logged out successfully"
+  });
 });
 
 // ============================================================
@@ -239,7 +316,10 @@ router.post("/forgot-password", async (req, res) => {
     const { email } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({
+      success: false,
+      message: "User not found"
+    });
 
     // generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -260,27 +340,37 @@ router.post("/forgot-password", async (req, res) => {
       message: "OTP sent to your email",
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 
 // ============================================================
-// FORGET PASSWORD
+// RESET PASSWORD
 // ============================================================
 router.put("/reset-password", async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
 
     if (!newPassword || !confirmPassword)
-      return res
-        .status(400)
-        .json({ message: "Both password fields are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Both password fields are required"
+      });
 
     if (newPassword !== confirmPassword)
-      return res.status(400).json({ message: "Passwords do not match" });
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match"
+      });
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({
+      success: false,
+      message: "User not found"
+    });
 
     user.password = newPassword; // hashed automatically if you use pre-save hook
     await user.save();
@@ -293,7 +383,10 @@ router.put("/reset-password", async (req, res) => {
       message: "Password reset successful",
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 

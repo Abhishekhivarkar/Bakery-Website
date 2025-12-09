@@ -4,7 +4,7 @@ const orderItemSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true,
+    required: false, // Make this optional for static data
   },
   name: { type: String, required: true },
   price: { type: Number, required: true },
@@ -26,6 +26,9 @@ const orderSchema = new mongoose.Schema(
       postalCode: String,
     },
     totalAmount: { type: Number, required: true },
+    subtotal: { type: Number, required: true },
+    tax: { type: Number, required: true },
+    deliveryCharge: { type: Number, required: true, default: 40 },
     paymentMethod: {
       type: String,
       enum: ["razorpay", "cod", "wallet"],
@@ -37,10 +40,11 @@ const orderSchema = new mongoose.Schema(
       default: "pending",
     },
     razorpay: {
-      // store razorpay response minimally
       orderId: String,
       paymentId: String,
       signature: String,
+      amount: Number,
+      currency: String,
     },
     orderStatus: {
       type: String,
@@ -55,6 +59,7 @@ const orderSchema = new mongoose.Schema(
       ],
       default: "created",
     },
+    paidAt: Date,
     deliveredAt: Date,
     cancelledAt: Date,
     createdAt: { type: Date, default: Date.now },

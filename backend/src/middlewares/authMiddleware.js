@@ -6,21 +6,37 @@ const authMiddleware = async (req, res, next) => {
     const token = req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      return res.status(401).json({ message: "No token provided" });
+      return res.status(401).json({ 
+        success: false,
+        message: "No token provided" 
+      });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token", error: error.message });
+    console.error("Auth middleware error:", error.message);
+    return res.status(401).json({ 
+      success: false,
+      message: "Invalid token", 
+      error: error.message 
+    });
   }
+  console.log("🔐 Auth Middleware - Checking token");
+console.log("Authorization header:", req.headers.authorization);
+console.log("Token:", req.headers.authorization?.replace('Bearer ', ''));
+console.log("User from token:", req.user);
 };
+// In your authMiddleware.js
 
 module.exports = authMiddleware;

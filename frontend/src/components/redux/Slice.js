@@ -1,60 +1,69 @@
+// redux/Slice.js - Updated (remove localStorage functions)
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  items: [
-    {
-      id: 1,
-      name: "Classic Croissant",
-      price: 180,
-      qty: 1,
-      image: "../Image/cake.webp",
-    },
-    {
-      id: 2,
-      name: "Rosewater Macarons",
-      price: 240,
-      qty: 1,
-      image: "../Image/chocolate.jpg",
-    },
-    {
-      id: 3,
-      name: "Chocolate Eclair",
-      price: 467.5,
-      qty: 2,
-      image: "../Image/corsant.webp",
-    },
-  ],
-  delivery: 20,
-  taxRate: 0.1,
+  items: [],
+  taxRate: 0.10,
+  delivery: 40,
 };
 
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
+    addToCart: (state, action) => {
+      console.log('🛒 Adding to cart:', action.payload);
+      const { id, name, price, image, qty = 1 } = action.payload;
+      const existingItem = state.items.find(item => item.id === id);
+      
+      if (existingItem) {
+        existingItem.qty += qty;
+        console.log('📈 Updated quantity for item:', existingItem);
+      } else {
+        state.items.push({ 
+          id, 
+          name, 
+          price, 
+          image, 
+          qty 
+        });
+        console.log('➕ Added new item to cart');
+      }
+      console.log('🛒 Cart after add:', state);
+    },
+    
     increaseQty: (state, action) => {
-      const item = state.items.find((i) => i.id === action.payload);
-      if (item) item.qty++;
+      const item = state.items.find(item => item.id === action.payload);
+      if (item) {
+        item.qty++;
+      }
     },
-
+    
     decreaseQty: (state, action) => {
-      const item = state.items.find((i) => i.id === action.payload);
-      if (item && item.qty > 1) item.qty--;
+      const item = state.items.find(item => item.id === action.payload);
+      if (item && item.qty > 1) {
+        item.qty--;
+      }
     },
-
+    
     deleteItem: (state, action) => {
-      state.items = state.items.filter((i) => i.id !== action.payload);
+      state.items = state.items.filter(item => item.id !== action.payload);
     },
-
+    
     clearCart: (state) => {
       state.items = [];
     },
   },
 });
 
-export const { increaseQty, decreaseQty, deleteItem, clearCart } =
-  cartSlice.actions;
+export const { 
+  addToCart, 
+  increaseQty, 
+  decreaseQty, 
+  deleteItem, 
+  clearCart 
+} = cartSlice.actions;
 
+// Export selector
 export const selectCart = (state) => state.cart;
-
 export default cartSlice.reducer;

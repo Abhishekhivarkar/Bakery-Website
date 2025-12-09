@@ -30,6 +30,104 @@
   transform: translateY(0%);
 }
 
+/* Animation for login page */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+@keyframes fadeOut {
+  from { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+  to { 
+    opacity: 0; 
+    transform: translateY(10px) scale(0.95); 
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+  opacity: 1;
+}
+.fade-out {
+  animation: fadeOut 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+/* Smooth transitions for login toggle */
+.login-toggle-enter {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.login-toggle-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.login-toggle-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.login-toggle-exit-active {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Button hover animations */
+.btn-hover-grow {
+  transition: transform 0.2s ease-in-out;
+}
+
+.btn-hover-grow:hover {
+  transform: scale(1.05);
+}
+
+.btn-hover-shadow {
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.btn-hover-shadow:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Form input focus animation */
+.input-focus-glow:focus {
+  box-shadow: 0 0 0 3px rgba(223, 162, 109, 0.3);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
 /* Media Queries of benefit of Bread */
 @media (max-width: 1258px) {
   .benefitBread {
@@ -79,7 +177,60 @@
     );
   }
 }
+
+/* Media Queries for login page */
+@media (max-width: 640px) {
+  .login-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .login-toggle-buttons {
+    flex-direction: column;
+  }
+  
+  .login-toggle-buttons button {
+    width: 100%;
+    border-radius: 0.5rem !important;
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dfa26d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c85a32;
+}
+
+/* Selection color */
+::selection {
+  background-color: rgba(223, 162, 109, 0.3);
+  color: #000;
+}
+
+/* Focus outline for accessibility */
+:focus-visible {
+  outline: 2px solid #dfa26d;
+  outline-offset: 2px;
+}
 /* @tailwind base;
 @tailwind components; */
 /* @tailwind utilities; */
-@import "tailwindcss";

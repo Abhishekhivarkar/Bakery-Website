@@ -1,27 +1,56 @@
 import { useState, useEffect } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
-import axios from "axios"; // ✅ ADD THIS
+import axios from "axios";
+import { useSelector } from "react-redux";
 import logo from "../assets/homePage/logo White.png";
 import { FaShoppingCart } from "react-icons/fa";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
-
-  // === AUTH STATE ===
   const [user, setUser] = useState(null);
-  const [cartCount, setCartCount] = useState(0);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Get cart from Redux
+  const cart = useSelector((state) => state.cart || { items: [] });
+  const cartCount = cart.items?.length || 0;
 
+  // Fetch categories from backend (old code logic)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("http://localhost:5000/api/product", {
+          params: {
+            limit: 100
+          }
+        });
+        
+        if (response.data && response.data.success) {
+          const uniqueCategories = [...new Set(response.data.products.map(p => p.category))];
+          setCategories(uniqueCategories.filter(cat => cat && cat.trim() !== ""));
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        setCategories(["Classic Cakes", "Premium Cakes", "Donuts", "Cookies", "Special Pizza", "Customize Cake"]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Sync user from localStorage/API (old code logic)
   useEffect(() => {
     const syncUserFromStorageOrAPI = async () => {
       try {
-        // 1️⃣ Try userInfo from localStorage
         const stored = localStorage.getItem("userInfo");
 
         if (stored) {
           setUser(JSON.parse(stored));
         } else {
-          // 2️⃣ If no userInfo, but token exists → fetch from backend
           const token = localStorage.getItem("userToken");
 
           if (!token) {
@@ -31,9 +60,7 @@ const Navbar = () => {
               headers: { Authorization: `Bearer ${token}` },
             });
 
-            // Adjust based on your backend response structure
             const u = res.data.user || res.data;
-
             const cleanedUser = {
               id: u.id || u._id,
               username: u.username,
@@ -45,84 +72,91 @@ const Navbar = () => {
             localStorage.setItem("userInfo", JSON.stringify(cleanedUser));
           }
         }
-
-        // 3️⃣ Optional: sync cart count from localStorage
-        const storedCart = localStorage.getItem("cartItems");
-        if (storedCart) {
-          try {
-            const items = JSON.parse(storedCart);
-            setCartCount(Array.isArray(items) ? items.length : 0);
-          } catch {
-            setCartCount(0);
-          }
-        } else {
-          setCartCount(0);
-        }
       } catch (err) {
         console.error("Failed to sync user:", err);
-        // If token is invalid, clean everything
         localStorage.removeItem("userToken");
         localStorage.removeItem("userInfo");
         setUser(null);
       }
     };
 
-    // Call once on mount
     syncUserFromStorageOrAPI();
-
-    // 4️⃣ Listen for manual "storage" events (logout, login updates)
-    const handleStorageChange = () => {
-      syncUserFromStorageOrAPI();
-    };
-
-    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("storage", syncUserFromStorageOrAPI);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("storage", syncUserFromStorageOrAPI);
     };
-  }, []); // ✅ No need for [location]
+  }, []);
 
+  // Listen for cart updates from localStorage (as backup)
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      // This will trigger when localStorage changes from other tabs/windows
+      // But Redux should handle it automatically
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('storage', handleCartUpdate);
+
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('storage', handleCartUpdate);
+    };
+  }, []);
+
+  // Debug: Log cart changes
+  useEffect(() => {
+    console.log("🛒 Navbar cart updated:", cartCount, "items");
+  }, [cartCount]);
+
+  // Menu items from old code (better dropdown logic)
   const menuItems = [
     {
       name: "Menu",
-      dropdown: [
-        { label: "Cakes", path: "/cakes" },
-        { label: "Pastries", path: "/pastries" },
-        { label: "Cupcakes", path: "/cupcakes" },
-        { label: "Bread & Cookies", path: "/cookies" },
-        { label: "More", path: "/menu" },
-      ],
+      dropdown: categories.map(cat => ({
+        label: cat,
+        path: `/menu?category=${encodeURIComponent(cat)}`
+      })).concat([
+        { label: "All Products", path: "/menu" },
+        { label: "Featured", path: "/menu?featured=true" },
+        { label: "New Arrivals", path: "/menu?new=true" }
+      ])
     },
     {
       name: "Categories",
-      dropdown: [
-        { label: "Birthday Cakes", path: "/birthday" },
-        { label: "Anniversary Cakes", path: "/anniversary" },
-        { label: "Wedding Cakes", path: "/wedding" },
-      ],
+      dropdown: categories.length > 0 
+        ? categories.map(cat => ({
+            label: cat,
+            path: `/menu?category=${encodeURIComponent(cat)}`
+          }))
+        : [
+            { label: "Classic Cakes", path: "/menu?category=Classic+Cakes" },
+            { label: "Premium Cakes", path: "/menu?category=Premium+Cakes" },
+            { label: "Donuts & Cookies", path: "/menu?category=Donuts+%26+Cookies" },
+            { label: "Special Pizza", path: "/menu?category=Special+Pizza" }
+          ]
     },
-    { name: "Gallery", path: "/gallery" },
     { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];
 
   return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] lg:w-[85%] z-50">
+    <nav className="fixed left-1/2 -translate-x-1/2 w-[100%] lg:w-[100%] z-50">
       <div
         className="bg-[#6f482a]/95 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.2)]
-        border border-white/20 rounded-full px-5 sm:px-8 md:px-10 py-3 
+        border border-white/20 px-5 sm:px-8 md:px-10 py-3 
         flex items-center justify-between transition-all"
       >
-        {/* Logo */}
+        {/* LOGO (from new code styling) */}
         <Link to="/" className="flex items-center">
           <img
             src={logo}
             alt="logo"
-            className="h-10 sm:h-12 drop-shadow-md hover:scale-105 transition"
+            className="h-10 sm:h-12 drop-shadow-md transition"
           />
         </Link>
 
-        {/* ======= DESKTOP MENU ======= */}
+        {/* DESKTOP MENU (from new code styling) */}
         <ul className="hidden xl:flex items-center space-x-8 text-white font-semibold">
           {menuItems.map((item) =>
             item.dropdown ? (
@@ -138,22 +172,34 @@ const Navbar = () => {
                 <div className="absolute left-0 right-0 top-full h-4"></div>
 
                 <div
-                  className="absolute top-full left-1/2 -translate-x-1/2 w-48
+                  className="absolute top-full left-1/2 -translate-x-1/2 min-w-48 max-w-64
                   bg-white/95 backdrop-blur-md shadow-xl rounded-xl py-2 mt-3
                   opacity-0 scale-95 pointer-events-none
                   group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto
                   transition-all duration-300 ease-out"
                 >
-                  {item.dropdown.map((d) => (
-                    <Link
-                      key={d.label}
-                      to={d.path}
-                      className="block px-4 py-2 text-sm text-[#8b5e3c]
-                      hover:bg-[#f8e9dd] hover:text-[#c57b41] transition"
-                    >
-                      {d.label}
-                    </Link>
-                  ))}
+                  {loading ? (
+                    <div className="px-4 py-2 text-sm text-[#8b5e3c]">
+                      Loading categories...
+                    </div>
+                  ) : item.dropdown.length > 0 ? (
+                    item.dropdown.map((d, index) => (
+                      <Link
+                        key={index}
+                        to={d.path}
+                        className="block px-4 py-2 text-sm text-[#8b5e3c]
+                        hover:bg-[#f8e9dd] hover:text-[#c57b41] transition truncate"
+                        title={d.label}
+                        onClick={() => setOpen(false)}
+                      >
+                        {d.label}
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-sm text-[#8b5e3c]">
+                      No categories found
+                    </div>
+                  )}
                 </div>
               </li>
             ) : (
@@ -169,12 +215,12 @@ const Navbar = () => {
           )}
         </ul>
 
-        {/* ======= DESKTOP BUTTONS ======= */}
+        {/* DESKTOP RIGHT SIDE BUTTONS (from new code styling) */}
         <div className="hidden xl:flex items-center gap-5">
           <Link to="/order">
             <button
-              className="px-6 py-2 rounded-full bg-gradient-to-r from-[#dda56a] to-[#e8b381] 
-              text-white font-semibold shadow-lg hover:scale-105 transition"
+              className="px-6 py-2 rounded-full bg-white 
+              text-[#8b5e3c] font-semibold shadow-lg hover:scale-105 transition border border-[#6f482a]"
             >
               Order Now
             </button>
@@ -194,15 +240,15 @@ const Navbar = () => {
                       className="absolute -top-2 -right-2 bg-red-500 text-white text-xs 
                       w-5 h-5 flex items-center justify-center rounded-full"
                     >
-                      {cartCount}
+                      {cartCount > 9 ? "9+" : cartCount}
                     </span>
                   )}
                 </div>
               </Link>
 
-              {/* PROFILE CIRCLE */}
+              {/* PROFILE */}
               <Link to="/profile">
-                <div className="w-10 h-10 rounded-full overflow-hidden hover:scale-110 transition">
+                <div className="w-10 h-10 rounded-full overflow-hidden hover:scale-110 transition border-2 border-white/50">
                   {user?.profilePicture ? (
                     <img
                       src={user.profilePicture}
@@ -221,7 +267,7 @@ const Navbar = () => {
             <Link to="/login">
               <button
                 className="px-6 py-2 rounded-full bg-white 
-                text-[#8b5e3c] font-semibold shadow-lg hover:scale-105 transition"
+                text-[#8b5e3c] font-semibold shadow-lg hover:scale-105 transition border border-[#6f482a]"
               >
                 Login Now
               </button>
@@ -229,13 +275,13 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger */}
-        <button className="xl:hidden text-white" onClick={() => setOpen(!open)}>
+        {/* MOBILE MENU BUTTON (from new code styling) */}
+        <button className="xl:hidden text-white hover:text-[#f3d2ae] transition" onClick={() => setOpen(!open)}>
           {open ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
-      {/* ======= MOBILE MENU ======= */}
+      {/* MOBILE MENU (from new code styling) */}
       <div
         className={`xl:hidden bg-white/90 backdrop-blur-xl mt-3 rounded-2xl shadow-xl overflow-hidden 
         transition-all duration-500 ${open ? "max-h-[600px] py-4" : "max-h-0"}`}
@@ -243,22 +289,36 @@ const Navbar = () => {
         <ul className="flex flex-col space-y-4 px-6 text-[#8b5e3c] font-semibold">
           {menuItems.map((item) =>
             item.dropdown ? (
-              <details key={item.name} className="group">
-                <summary className="cursor-pointer flex justify-between items-center">
+              <details key={item.name} className="group" open={open}>
+                <summary className="cursor-pointer flex justify-between items-center list-none">
                   {item.name}
+                  <ChevronDown 
+                    size={20} 
+                    className="transition-transform group-open:rotate-180" 
+                  />
                 </summary>
 
-                <div className="mt-2 flex flex-col space-y-2 pl-3">
-                  {item.dropdown.map((d) => (
-                    <Link
-                      key={d.label}
-                      to={d.path}
-                      onClick={() => setOpen(false)}
-                      className="hover:text-[#c57b41] transition"
-                    >
-                      {d.label}
-                    </Link>
-                  ))}
+                <div className="mt-2 flex flex-col space-y-2 pl-3 border-l-2 border-[#f3d2ae]">
+                  {loading ? (
+                    <div className="text-sm text-gray-500 py-1">
+                      Loading...
+                    </div>
+                  ) : item.dropdown.length > 0 ? (
+                    item.dropdown.map((d, index) => (
+                      <Link
+                        key={index}
+                        to={d.path}
+                        onClick={() => setOpen(false)}
+                        className="text-sm hover:text-[#c57b41] transition py-1"
+                      >
+                        {d.label}
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500 py-1">
+                      No categories
+                    </div>
+                  )}
                 </div>
               </details>
             ) : (
@@ -266,62 +326,82 @@ const Navbar = () => {
                 key={item.name}
                 to={item.path}
                 onClick={() => setOpen(false)}
-                className="hover:text-[#c57b41] transition"
+                className="hover:text-[#c57b41] transition py-2"
               >
                 {item.name}
               </Link>
             )
           )}
 
-          {/* MOBILE AUTH */}
-          <div className="flex flex-col-1 gap-5">
-            <Link to="/order" onClick={() => setOpen(false)}>
-              <button
-                className="w-42 px-6 py-2 rounded-full bg-gradient-to-r from-[#dda56a] to-[#e8b381] 
-                text-white font-semibold shadow-lg hover:scale-105 transition"
+          {/* MOBILE AUTH & CART (from old code logic with new styling) */}
+          <div className="flex flex-col gap-4 pt-4 border-t border-gray-200">
+            {/* Quick Menu Links */}
+            <div className="grid grid-cols-2 gap-2">
+              <Link 
+                to="/menu" 
+                onClick={() => setOpen(false)}
+                className="px-4 py-2 text-center bg-[#f8e9dd] text-[#8b5e3c] rounded-lg hover:bg-[#f3d2ae] transition"
               >
-                Order Now
-              </button>
-            </Link>
+                Browse Menu
+              </Link>
+              <Link 
+                to="/cart" 
+                onClick={() => setOpen(false)}
+                className="px-4 py-2 text-center bg-[#6f482a] text-white rounded-lg hover:bg-[#8b5e3c] transition"
+              >
+                View Cart ({cartCount})
+              </Link>
+            </div>
 
             {!user ? (
-              <Link to="/login" onClick={() => setOpen(false)}>
-                <button className="w-42 px-6 py-2 rounded-full bg-white text-[#8b5e3c] font-semibold shadow-lg hover:scale-105 transition border-1 border-[#6f482a]">
-                  Login Now
-                </button>
-              </Link>
+              <div className="flex gap-3">
+                <Link to="/login" onClick={() => setOpen(false)} className="flex-1">
+                  <button className="w-full px-6 py-2 rounded-full bg-white text-[#8b5e3c] font-semibold shadow hover:scale-105 transition border border-[#6f482a]">
+                    Login
+                  </button>
+                </Link>
+                <Link to="/register" onClick={() => setOpen(false)} className="flex-1">
+                  <button className="w-full px-6 py-2 rounded-full bg-gradient-to-r from-[#dda56a] to-[#e8b381] text-white font-semibold shadow hover:scale-105 transition">
+                    Register
+                  </button>
+                </Link>
+              </div>
             ) : (
-              <div className="flex items-center gap-5 ml-auto">
-                <Link to="/cart">
+              <div className="flex items-center gap-4">
+                <div className="flex-1 flex items-center gap-3">
+                  <Link to="/profile" onClick={() => setOpen(false)}>
+                    <div className="w-10 h-10 rounded-full overflow-hidden hover:scale-110 transition border-2 border-[#8b5e3c]">
+                      {user?.profilePicture ? (
+                        <img
+                          src={user.profilePicture}
+                          alt="profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-[#d78f52] text-white flex items-center justify-center text-lg font-bold">
+                          {user?.username?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                  <div>
+                    <p className="font-semibold text-[#6f482a]">{user?.username}</p>
+                    <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+                  </div>
+                </div>
+                <Link to="/cart" onClick={() => setOpen(false)}>
                   <div className="relative">
                     <FaShoppingCart
-                      size={26}
-                      className="text-[#8b5e3c] hover:text-[#f3d2ae] transition"
+                      size={24}
+                      className="text-[#6f482a] hover:text-[#c57b41] transition"
                     />
                     {cartCount > 0 && (
                       <span
                         className="absolute -top-2 -right-2 bg-red-500 text-white text-xs 
-                      w-5 h-5 flex items-center justify-center rounded-full"
+                        w-5 h-5 flex items-center justify-center rounded-full font-bold"
                       >
-                        {cartCount}
+                        {cartCount > 9 ? "9+" : cartCount}
                       </span>
-                    )}
-                  </div>
-                </Link>
-
-                {/* MOBILE PROFILE */}
-                <Link to="/profile">
-                  <div className="w-10 h-10 rounded-full overflow-hidden hover:scale-110 transition">
-                    {user?.profilePicture ? (
-                      <img
-                        src={user.profilePicture}
-                        alt="profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-[#d78f52] text-white flex items-center justify-center text-lg font-bold">
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </div>
                     )}
                   </div>
                 </Link>
