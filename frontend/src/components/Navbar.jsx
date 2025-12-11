@@ -111,7 +111,9 @@ const Navbar = () => {
 
   // Menu items from old code (better dropdown logic)
   const menuItems = [
+    { name: "Home", path: "/home" },
     {
+      
       name: "Menu",
       dropdown: categories.map(cat => ({
         label: cat,
@@ -122,22 +124,11 @@ const Navbar = () => {
         { label: "New Arrivals", path: "/menu?new=true" }
       ])
     },
-    {
-      name: "Categories",
-      dropdown: categories.length > 0 
-        ? categories.map(cat => ({
-            label: cat,
-            path: `/menu?category=${encodeURIComponent(cat)}`
-          }))
-        : [
-            { label: "Classic Cakes", path: "/menu?category=Classic+Cakes" },
-            { label: "Premium Cakes", path: "/menu?category=Premium+Cakes" },
-            { label: "Donuts & Cookies", path: "/menu?category=Donuts+%26+Cookies" },
-            { label: "Special Pizza", path: "/menu?category=Special+Pizza" }
-          ]
-    },
+    { name: "Custom Cake", path: "/customize-builder" },
     { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
+    
+    
   ];
 
   return (
@@ -351,6 +342,7 @@ const Navbar = () => {
               >
                 View Cart ({cartCount})
               </Link>
+              
             </div>
 
             {!user ? (

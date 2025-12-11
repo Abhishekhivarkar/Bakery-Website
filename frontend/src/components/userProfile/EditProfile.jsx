@@ -68,7 +68,7 @@ export default function EditProfile() {
     try {
       // Update basic profile info
       await axios.put(
-        "http://localhost:5000/api/user/update-profile",
+         `http://localhost:5000/api/user/update-profile/${user._id}`,
         {
           name: form.name,
           username: form.username,

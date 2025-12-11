@@ -25,6 +25,185 @@ const OrderNow = () => {
   // Razorpay key - hardcoded for now
   const RAZORPAY_KEY_ID = "rzp_test_Rn3xa74qiaEekq";
 
+  // Function to generate custom cake image (similar to Cart.jsx)
+  // Function to generate custom cake image with circular shape
+const generateCustomCakeImage = (cake) => {
+  if (!cake) return "/Image/custom-cake-default.jpg";
+  
+  // Create a canvas for custom cake image generation
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 200;
+  canvas.height = 200;
+  
+  try {
+    // Clear canvas with transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Cake center position
+    const centerX = 100;
+    const centerY = 100;
+    
+    // Cake dimensions
+    const cakeRadius = 70; // Radius of the cake
+    const layerHeight = 15; // Height of each layer
+    
+    // Draw cake base (main body) - Circular shape
+    ctx.fillStyle = cake.baseColor || '#FFD1DC'; // Default pink
+    
+    // Draw circular cake base
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, cakeRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw layers (if multiple layers)
+    const layers = cake.layers || 1;
+    for (let i = 1; i < layers; i++) {
+      const layerY = centerY - (i * layerHeight);
+      const layerRadius = cakeRadius - (i * 3); // Slightly smaller radius for each layer
+      
+      ctx.fillStyle = cake.layerColors?.[i] || cake.baseColor || '#FFD1DC';
+      ctx.beginPath();
+      ctx.arc(centerX, layerY, layerRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Frosting on top (circular border)
+    if (cake.frosting) {
+      ctx.fillStyle = cake.frostingColor || '#FFFFFF';
+      const frostingRadius = cakeRadius + 2;
+      const frostingY = centerY - ((layers - 1) * layerHeight) - 2;
+      
+      // Create frosting border
+      ctx.beginPath();
+      ctx.arc(centerX, frostingY, frostingRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Add decorative frosting swirls
+      ctx.fillStyle = cake.frostingColor || '#FFFFFF';
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6) {
+        const swirlX = centerX + Math.cos(angle) * (frostingRadius - 10);
+        const swirlY = frostingY + Math.sin(angle) * (frostingRadius - 10);
+        
+        ctx.beginPath();
+        ctx.arc(swirlX, swirlY, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    // Decorations (sprinkles/candies) - placed randomly on cake
+    if (cake.decorations && cake.decorations.length > 0) {
+      cake.decorations.forEach((decoration, index) => {
+        ctx.fillStyle = decoration.color || getRandomColor();
+        
+        // Calculate position on circular cake
+        const angle = (index / cake.decorations.length) * Math.PI * 2;
+        const distance = cakeRadius * (0.3 + Math.random() * 0.5); // Random distance from center
+        const decorationX = centerX + Math.cos(angle) * distance;
+        const decorationY = centerY + Math.sin(angle) * distance;
+        const size = 4 + Math.random() * 3; // Random size
+        
+        // Draw decoration as small circle
+        ctx.beginPath();
+        ctx.arc(decorationX, decorationY, size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Add small highlight for 3D effect
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.arc(decorationX - size/3, decorationY - size/3, size/2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+    
+    // Text on cake (circular path)
+    if (cake.message) {
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      
+      // Split message if too long
+      const maxLength = 15;
+      const message = cake.message.length > maxLength 
+        ? cake.message.substring(0, maxLength) + '...' 
+        : cake.message;
+      
+      // Position text based on cake layers
+      const textY = centerY - ((layers - 1) * layerHeight) + 5;
+      ctx.fillText(message, centerX, textY);
+    }
+    
+    // Add shadow/3D effect to cake
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    
+    // Redraw border with shadow
+    ctx.strokeStyle = cake.baseColor || '#FFD1DC';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, cakeRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Add plate/serving dish (circular plate)
+    ctx.fillStyle = '#F0F0F0';
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY + cakeRadius + 5, cakeRadius + 15, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Add plate rim
+    ctx.strokeStyle = '#D0D0D0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY + cakeRadius + 5, cakeRadius + 15, 10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Convert canvas to data URL
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.error('Error generating custom cake image:', error);
+    return "/Image/custom-cake-default.jpg";
+  }
+};
+
+// Helper function to generate random colors for decorations
+const getRandomColor = () => {
+  const colors = [
+    '#FF0000', // Red
+    '#00FF00', // Green
+    '#0000FF', // Blue
+    '#FFFF00', // Yellow
+    '#FF00FF', // Magenta
+    '#00FFFF', // Cyan
+    '#FFA500', // Orange
+    '#800080', // Purple
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+  // Function to get image URL for item
+  const getItemImage = (item) => {
+    // Check if it's a custom cake
+    const isCustomCake = item.isCustomCake || 
+                        item.category === 'custom' || 
+                        item.name?.toLowerCase().includes('custom');
+    
+    if (isCustomCake) {
+      // Generate custom cake image
+      return generateCustomCakeImage(item);
+    }
+    
+    // For regular items, use the image URL with fallback
+    return item.image || "/Image/default.avif";
+  };
+
   useEffect(() => {
     const checkAuth = () => {
       setIsCheckingAuth(true);
@@ -119,6 +298,28 @@ const OrderNow = () => {
     try {
       console.log("🔄 Creating order with token:", token.substring(0, 20) + "...");
 
+      // Prepare items for order creation
+      const orderItems = items.map(item => {
+        const isCustomCake = item.isCustomCake || 
+                            item.category === 'custom' || 
+                            item.name?.toLowerCase().includes('custom');
+        
+        return {
+          name: item.name,
+          price: item.price,
+          qty: item.qty,
+          img: isCustomCake ? "custom_cake_generated" : (item.image || ""),
+          isCustomCake: isCustomCake,
+          customDetails: isCustomCake ? {
+            baseColor: item.baseColor,
+            layers: item.layers,
+            frosting: item.frosting,
+            decorations: item.decorations,
+            message: item.message
+          } : undefined
+        };
+      });
+
       // First create order in backend using create-simple endpoint
       const orderRes = await fetch("http://localhost:5000/api/orders/create-simple", {
         method: "POST",
@@ -127,12 +328,7 @@ const OrderNow = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          items: items.map(item => ({
-            name: item.name,
-            price: item.price,
-            qty: item.qty,
-            img: item.image || item.img || ""
-          })),
+          items: orderItems,
           shippingAddress,
           paymentMethod: "razorpay"
         }),
@@ -450,23 +646,43 @@ const OrderNow = () => {
             <div className="bg-white p-6 rounded-xl shadow-md">
               <h2 className="text-xl font-semibold mb-4">Order Items ({items.length})</h2>
               <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-gray-600">Quantity: {item.qty}</p>
+                {items.map((item) => {
+                  const isCustomCake = item.isCustomCake || 
+                                      item.category === 'custom' || 
+                                      item.name?.toLowerCase().includes('custom');
+                  
+                  return (
+                    <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                      <img
+                        src={getItemImage(item)}
+                        alt={item.name}
+                        className="w-16 h-16 rounded-lg object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = isCustomCake 
+                            ? "/Image/custom-cake-default.jpg" 
+                            : "/Image/default.avif";
+                        }}
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-medium">{item.name}</h4>
+                        <p className="text-gray-600">Quantity: {item.qty}</p>
+                        {isCustomCake && (
+                          <div className="mt-1">
+                            <p className="text-xs text-rose-500 font-medium">Custom Cake</p>
+                            {item.message && (
+                              <p className="text-xs text-gray-500">Message: "{item.message}"</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">₹{item.price * item.qty}</p>
+                        <p className="text-sm text-gray-500">₹{item.price} each</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">₹{item.price * item.qty}</p>
-                      <p className="text-sm text-gray-500">₹{item.price} each</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
